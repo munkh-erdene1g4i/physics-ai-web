@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Физик AI — Ухаалаг Шалгалтын Систем</title>
+
+ <script>
+    (function () {
+      const h = "https://";
+      const styles = [
+        h + "fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap",
+        h + "cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css",
+        h + "cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+      ];
+      styles.forEach((href) => {
+        const l = document.createElement("link");
+        l.rel = "stylesheet";
+        l.href = href;
+        document.head.appendChild(l);
+      });
+
+      const scripts = [
+        h + "cdn.tailwindcss.com",
+        h + "cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js",
+        h + "cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+      ];
+      scripts.forEach((src) => {
+        const s = document.createElement("script");
+        s.src = src;
+        s.async = false;
+        document.head.appendChild(s);
+      });
+    })();
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f8fafc; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    .katex { font-size: 1.05em; line-height: 1.35; }
+    .katex .mtext { font-family: 'Inter', system-ui, sans-serif !important; }
+    .katex-display { overflow-x: auto; overflow-y: hidden; padding: 0.35rem 0; margin: 0.4rem 0; }
+
+    @property --border-angle {
+      syntax: "<angle>";
+      inherits: false;
+      initial-value: 0deg;
+    }
+    @keyframes orbit-border-spin {
+      0% { --border-angle: 0deg; }
+      100% { --border-angle: 360deg; }
+    }
+    @keyframes logo-gloss-sweep {
+      0% { transform: translateX(-160%) rotate(25deg); }
+      45%, 100% { transform: translateX(220%) rotate(25deg); }
+    }
+    @keyframes logo-halo-pulse {
+      0%, 100% { box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.22), 0 6px 18px -2px rgba(79, 70, 229, 0.28); }
+      50% { box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.32), 0 8px 24px 0 rgba(14, 165, 233, 0.42); }
+    }
+    @keyframes btn-shine-move {
+      0% { left: -75%; }
+      55%, 100% { left: 135%; }
+    }
+    @keyframes blob-drift {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(24px, -18px) scale(1.06); }
+      66% { transform: translate(-18px, 16px) scale(0.95); }
+    }
+    @keyframes fade-up-in {
+      0% { opacity: 0; transform: translateY(14px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in { animation: fade-up-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .login-blob { animation: blob-drift 14s ease-in-out infinite; }
+
+    .login-grid-pattern {
+      background-image: radial-gradient(rgba(14, 165, 233, 0.14) 1px, transparent 1px);
+      background-size: 26px 26px;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.86);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .logo-shiny-wrapper {
+      position: relative;
+      overflow: hidden;
+      border: 2px solid transparent;
+      background-image:
+        linear-gradient(145deg, #ffffff 0%, #f0f9ff 100%),
+        conic-gradient(from var(--border-angle), #38bdf8 0deg, #818cf8 90deg, #facc15 180deg, #2dd4bf 270deg, #38bdf8 360deg);
+      background-origin: border-box;
+      background-clip: padding-box, border-box;
+      animation: orbit-border-spin 3s linear infinite, logo-halo-pulse 2.8s ease-in-out infinite;
+    }
+    .logo-shiny-wrapper::after {
+      content: "";
+      position: absolute;
+      top: -40%;
+      left: -30%;
+      width: 45%;
+      height: 180%;
+      background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.85) 50%, rgba(255,255,255,0) 100%);
+      animation: logo-gloss-sweep 2.8s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .animated-orbit-border {
+      border: 2px solid transparent !important;
+      background-image:
+        linear-gradient(135deg, #f0f9ff 0%, #eef2ff 100%),
+        conic-gradient(from var(--border-angle), #0284c7 0deg, #4f46e5 90deg, #0d9488 180deg, #38bdf8 270deg, #0284c7 360deg) !important;
+      background-origin: border-box !important;
+      background-clip: padding-box, border-box !important;
+      animation: orbit-border-spin 2.4s linear infinite !important;
+      box-shadow: 0 6px 18px -4px rgba(14, 165, 233, 0.25);
+    }
+
+    .btn-shimmer {
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-shimmer::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -80%;
+      width: 55%;
+      height: 100%;
+      background: linear-gradient(110deg, transparent 0%, rgba(255, 255, 255, 0.35) 50%, transparent 100%);
+      transform: skewX(-20deg);
+      animation: btn-shine-move 3.4s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .option-card { transition: all 0.18s ease; }
+    .option-card:hover { transform: translateY(-1px); }
+
+    /* Хэвлэх горим (Print Stylesheet) */
+    @media print {
+      @page { margin: 12mm; }
+      body {
+        background: #ffffff !important;
+        background-image: none !important;
+        color: #000000 !important;
+      }
+      .no-print { display: none !important; }
+      .print-clean {
+        background: #ffffff !important;
+        color: #000000 !important;
+        box-shadow: none !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+      .print-break-avoid {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      #scorePercent {
+        color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50 text-slate-800 antialiased selection:bg-sky-100 selection:text-sky-900 login-grid-pattern">
+
+  <!-- Арын зөөлөн хөдөлгөөнт гэрэлтүүлэг -->
+  <div class="no-print fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div class="login-blob absolute -top-24 -left-24 w-96 h-96 rounded-full bg-sky-300/25 blur-3xl"></div>
+    <div class="login-blob absolute top-1/3 -right-24 w-[26rem] h-[26rem] rounded-full bg-indigo-300/20 blur-3xl" style="animation-delay: -5s;"></div>
+    <div class="login-blob absolute -bottom-24 left-1/3 w-80 h-80 rounded-full bg-teal-300/25 blur-3xl" style="animation-delay: -9s;"></div>
+  </div>
+
+  <!-- Дээд шилэн цэс -->
+  <header class="no-print sticky top-0 z-30 w-full px-4 sm:px-6 pt-3.5">
+    <div class="max-w-4xl mx-auto glass-card rounded-2xl border border-slate-200/80 shadow-sm px-4 sm:px-5 h-16 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="logo-shiny-wrapper w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sky-600">
+          <svg class="w-6 h-6 relative z-10" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3">
+            <circle cx="32" cy="32" r="5" fill="currentColor" />
+            <ellipse cx="32" cy="32" rx="26" ry="10" transform="rotate(30 32 32)" />
+            <ellipse cx="32" cy="32" rx="26" ry="10" transform="rotate(-30 32 32)" />
+            <ellipse cx="32" cy="32" rx="26" ry="10" transform="rotate(90 32 32)" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <h1 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight truncate">Физик AI</h1>
+          <p class="text-[11px] font-medium text-slate-500 truncate">Ухаалаг шалгалт ба алдаанд суурилсан онол</p>
+        </div>
+      </div>
+
+      <!-- Цаг тоолуур -->
+      <div id="timerBox" class="hidden items-center gap-2.5">
+        <div id="timerBadge" class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 font-mono text-sm font-extrabold text-amber-800">
+          <i class="fa-regular fa-clock text-amber-600"></i>
+          <span id="timerDisplay">00:00</span>
+        </div>
+        <button onclick="resetApp()" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold transition cursor-pointer" title="Буцах">
+          <i class="fa-solid fa-rotate-left"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="relative z-10 max-w-4xl mx-auto px-4 py-8">
+
+    <!-- 1. ЭХЛЭХ ХЭСЭГ -->
+    <section id="setupScreen" class="fade-in max-w-2xl mx-auto mt-4">
+      <div class="text-center mb-7">
+        <span class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 border border-sky-200/80 shadow-xs text-xs font-bold text-sky-700 mb-3">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          Зөвхөн Физикийн сэдэв шүүлтүүртэй AI систем
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+          Сэдвээ бичээд
+          <span class="bg-gradient-to-r from-sky-600 via-indigo-600 to-teal-600 bg-clip-text text-transparent">
+            шалгалтаа өг
+          </span>
+        </h2>
+        <p class="text-slate-600 mt-2.5 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
+          Шалгалтаа өгч дууссаны дараа хиймэл оюун таны алдсан асуултууд дээр үндэслэн яг дутуу ойлгосон онол, томьёог гаргаж өгнө.
+        </p>
+      </div>
+
+      <div class="glass-card rounded-3xl border border-slate-200/90 shadow-2xl shadow-sky-900/10 p-6 sm:p-8">
+        <div class="space-y-5">
+          <!-- Физикийн сэдэв -->
+          <div>
+            <label for="topicInput" class="block text-xs font-bold text-slate-700 mb-2">
+              <i class="fa-solid fa-book-open text-sky-600 mr-1.5"></i>Физикийн сэдэв
+            </label>
+            <input
+              id="topicInput"
+              type="text"
+              placeholder="Жишээ нь: Ньютоны хуулиуд, Омын хууль, Гэрлийн хугарал..."
+              class="w-full px-4 py-3.5 rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 text-sm text-slate-900 placeholder-slate-400 outline-none transition"
+            />
+          </div>
+
+          <!-- Шалгалтын түвшин (3 шатлал) -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-2">
+              <i class="fa-solid fa-layer-group text-teal-600 mr-1.5"></i>Шалгалтын түвшин
+            </label>
+            <div class="grid grid-cols-3 gap-2.5">
+              <button type="button" data-level="Анхан шат" onclick="setDifficulty('Анхан шат')" class="level-btn py-2.5 px-2 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-bold transition cursor-pointer">Анхан шат</button>
+              <button type="button" data-level="Дунд шат" onclick="setDifficulty('Дунд шат')" class="level-btn py-2.5 px-2 rounded-xl animated-orbit-border text-sky-950 text-xs sm:text-sm font-bold transition cursor-pointer">Дунд шат</button>
+              <button type="button" data-level="Хүндэвтэр" onclick="setDifficulty('Хүндэвтэр')" class="level-btn py-2.5 px-2 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-bold transition cursor-pointer">Хүндэвтэр</button>
+            </div>
+          </div>
+
+          <!-- Даалгаврын тоо (5, 10, 20, Бусад) -->
+          <div>
+            <label for="questionCountInput" class="block text-xs font-bold text-slate-700 mb-2">
+              <i class="fa-solid fa-list-ol text-sky-600 mr-1.5"></i>Даалгаврын тоо
+            </label>
+            <div class="grid grid-cols-4 gap-2">
+              <button type="button" data-qcount="5" onclick="setQuestionCount(5)" class="qcount-btn py-2.5 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-bold transition cursor-pointer">5</button>
+              <button type="button" data-qcount="10" onclick="setQuestionCount(10)" class="qcount-btn py-2.5 rounded-xl animated-orbit-border text-sky-950 text-xs sm:text-sm font-bold transition cursor-pointer">10</button>
+              <button type="button" data-qcount="20" onclick="setQuestionCount(20)" class="qcount-btn py-2.5 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-bold transition cursor-pointer">20</button>
+              <button type="button" data-qcount="custom" onclick="setCustomQuestionCount()" class="qcount-btn py-2.5 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-bold transition cursor-pointer">Бусад</button>
+            </div>
+            <div id="customQCountWrap" class="hidden mt-3">
+              <input
+                id="questionCountInput"
+                type="number"
+                min="1"
+                max="30"
+                value="10"
+                placeholder="Даалгаврын тоог бичнэ үү (1–30)"
+                class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 text-sm font-semibold text-slate-900 outline-none transition"
+              />
+            </div>
+          </div>
+
+          <!-- Шалгалтын хугацаа (5, 10, 40, Бусад) -->
+          <div>
+            <label for="minutesInput" class="block text-xs font-bold text-slate-700 mb-2">
+              <i class="fa-solid fa-hourglass-half text-indigo-600 mr-1.5"></i>Шалгалтын хугацаа (минут)
+            </label>
+            <div class="grid grid-cols-4 gap-2">
+              <button type="button" data-min="5" onclick="setMinutes(5)" class="time-btn py-2.5 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-bold transition cursor-pointer">5 мин</button>
+              <button type="button" data-min="10" onclick="setMinutes(10)" class="time-btn py-2.5 rounded-xl animated-orbit-border text-sky-950 text-xs sm:text-sm font-bold transition cursor-pointer">10 мин</button>
+              <button type="button" data-min="40" onclick="setMinutes(40)" class="time-btn py-2.5 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-bold transition cursor-pointer">40 мин</button>
+              <button type="button" data-min="custom" onclick="setCustomMinutes()" class="time-btn py-2.5 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-bold transition cursor-pointer">Бусад</button>
+            </div>
+            <div id="customMinutesWrap" class="hidden mt-3">
+              <input
+                id="minutesInput"
+                type="number"
+                min="3"
+                max="180"
+                value="10"
+                placeholder="Хугацаагаа минутаар бичнэ үү (жишээ нь: 15, 25)"
+                class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 text-sm font-semibold text-slate-900 outline-none transition"
+              />
+            </div>
+          </div>
+
+          <div id="alertBox" class="hidden p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs sm:text-sm font-medium flex items-start gap-2.5">
+            <i class="fa-solid fa-triangle-exclamation mt-0.5 text-rose-500"></i>
+            <span id="alertMessage"></span>
+          </div>
+
+          <button
+            id="generateBtn"
+            onclick="generateLesson()"
+            class="btn-shimmer w-full py-4 rounded-xl bg-gradient-to-r from-sky-600 via-indigo-600 to-sky-600 hover:brightness-105 text-white font-bold text-sm sm:text-base shadow-lg shadow-sky-600/25 transition flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <i class="fa-solid fa-play"></i>
+            Шалгалт эхлүүлэх →
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. АЧААЛЛАХ ХЭСЭГ -->
+    <section id="loadingScreen" class="hidden py-24 text-center fade-in">
+      <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl logo-shiny-wrapper mb-5 text-sky-600">
+        <i class="fa-solid fa-atom text-4xl animate-spin relative z-10"></i>
+      </div>
+      <h3 class="text-xl font-extrabold text-slate-900">Шалгалтын тест бэлдэж байна...</h3>
+      <p class="text-slate-500 text-sm mt-2">Сэдвийг шалгаж, сонгосон түвшин болон тоо ширхэгт тохирсон асуултуудыг боловсруулж байна</p>
+    </section>
+
+    <!-- 3. ШАЛГАЛТ АЖИЛЛАХ ХЭСЭГ -->
+    <section id="lessonScreen" class="hidden space-y-6 fade-in">
+      <div class="print-clean bg-gradient-to-r from-sky-600 via-indigo-600 to-teal-600 rounded-2xl p-6 text-white shadow-lg shadow-sky-600/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div class="flex flex-wrap items-center gap-2 mb-1.5">
+            <span class="inline-block text-[11px] font-bold uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full">Физикийн шалгалт</span>
+            <span id="lessonLevelBadge" class="inline-block text-[11px] font-bold bg-white/25 px-2.5 py-0.5 rounded-full">Дунд шат</span>
+          </div>
+          <h2 id="lessonTitle" class="text-xl sm:text-2xl font-extrabold tracking-tight"></h2>
+        </div>
+        <div class="no-print flex items-center gap-2 self-start sm:self-center">
+          <span id="answeredCount" class="text-xs font-bold px-3.5 py-2 rounded-xl bg-white/20 backdrop-blur-xs text-white">0 / 0 хариулсан</span>
+          <button
+            type="button"
+            onclick="window.print()"
+            class="px-3.5 py-2 rounded-xl bg-white text-indigo-700 hover:bg-sky-50 text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+          >
+            <i class="fa-solid fa-print"></i> Хэвлэх
+          </button>
+        </div>
+      </div>
+
+      <div class="print-clean bg-white rounded-3xl border border-slate-200/80 shadow-sm p-5 sm:p-7">
+        <div id="quizContainer" class="space-y-5"></div>
+
+        <div class="no-print mt-8 pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+          <button
+            type="button"
+            onclick="window.print()"
+            class="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition flex items-center gap-2 cursor-pointer"
+          >
+            <i class="fa-solid fa-print"></i> Шалгалтыг хэвлэх
+          </button>
+          <button
+            onclick="submitQuiz()"
+            class="btn-shimmer px-8 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-105 text-white font-bold text-sm sm:text-base shadow-lg shadow-emerald-600/20 transition flex items-center gap-2 cursor-pointer"
+          >
+            <i class="fa-solid fa-check-double"></i>
+            Шалгаж дүн гаргах
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. ДҮН БА АЛДААН ДЭЭР ҮНДЭСЛЭСЭН ОНОЛ -->
+    <section id="resultScreen" class="hidden space-y-6 fade-in">
+      <div class="print-clean glass-card rounded-3xl border border-slate-200/90 shadow-xl shadow-sky-900/5 p-8 text-center">
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Шалгалтын үр дүн</p>
+        <div id="scorePercent" class="text-6xl font-extrabold bg-gradient-to-r from-sky-600 via-indigo-600 to-teal-600 bg-clip-text text-transparent my-3">0%</div>
+        <div id="gradeBadge" class="inline-block px-4 py-1.5 rounded-full text-sm font-bold border mb-3"></div>
+        <p id="scoreSummary" class="text-slate-600 text-sm font-medium"></p>
+
+        <div class="no-print mt-6 flex flex-wrap justify-center gap-3">
+          <button
+            type="button"
+            onclick="window.print()"
+            class="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-bold transition flex items-center gap-2 cursor-pointer"
+          >
+            <i class="fa-solid fa-print"></i> Хэвлэх
+          </button>
+          <button onclick="resetApp()" class="px-6 py-3 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white text-sm font-bold shadow-sm transition flex items-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-plus"></i> Шинэ шалгалт өгөх
+          </button>
+        </div>
+      </div>
+
+      <div id="remedialCard" class="print-clean bg-white rounded-3xl border-2 border-indigo-200/80 shadow-sm p-6 sm:p-8">
+        <div class="flex items-center justify-between gap-2.5 mb-4 pb-3 border-b border-slate-100">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <i class="fa-solid fa-graduation-cap text-base"></i>
+            </div>
+            <div>
+              <h3 class="text-base sm:text-lg font-extrabold text-slate-900">Алдсан сэдвүүдийн давтлага онол</h3>
+              <p class="text-xs text-slate-500">Таны буруу хариулсан бодлогууд дээр үндэслэсэн тайлбар</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="remedialLoading" class="no-print hidden py-8 text-center">
+          <i class="fa-solid fa-circle-notch fa-spin text-2xl text-sky-600 mb-3"></i>
+          <p class="text-sm font-medium text-slate-600">Таны алдсан асуултуудыг шинжилж, тохирсон онолын тайлбар бэлдэж байна...</p>
+        </div>
+
+        <div id="remedialContent" class="space-y-4"></div>
+      </div>
+
+      <div class="print-clean bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 sm:p-8">
+        <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mb-5">Хариултын задаргаа</h3>
+        <div id="reviewContainer" class="space-y-4"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    let currentData = null;
+    let userAnswers = {};
+    let timerInterval = null;
+    let remainingSeconds = 0;
+    let selectedDifficulty = "Дунд шат";
+
+    function setDifficulty(level) {
+      selectedDifficulty = level;
+      document.querySelectorAll(".level-btn").forEach((btn) => {
+        if (btn.dataset.level === level) {
+          btn.className = "level-btn py-2.5 px-2 rounded-xl animated-orbit-border text-sky-950 text-xs sm:text-sm font-bold transition cursor-pointer";
+        } else {
+          btn.className = "level-btn py-2.5 px-2 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-bold transition cursor-pointer";
+        }
+      });
+    }
+
+    function setQuestionCount(num) {
+      document.getElementById("questionCountInput").value = num;
+      document.getElementById("customQCountWrap").classList.add("hidden");
+      document.querySelectorAll(".qcount-btn").forEach((btn) => {
+        if (btn.dataset.qcount === String(num)) {
+          btn.className = "qcount-btn py-2.5 rounded-xl animated-orbit-border text-sky-950 text-xs sm:text-sm font-bold transition cursor-pointer";
+        } else {
+          btn.className = "qcount-btn py-2.5 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-bold transition cursor-pointer";
+        }
+      });
+    }
+
+    function setCustomQuestionCount() {
+      const wrap = document.getElementById("customQCountWrap");
+      const input = document.getElementById("questionCountInput");
+      wrap.classList.remove("hidden");
+      input.focus();
+      input.select();
+
+      document.querySelectorAll(".qcount-btn").forEach((btn) => {
+        if (btn.dataset.qcount === "custom") {
+          btn.className = "qcount-btn py-2.5 rounded-xl animated-orbit-border text-sky-950 text-xs sm:text-sm font-bold transition cursor-pointer";
+        } else {
+          btn.className = "qcount-btn py-2.5 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-bold transition cursor-pointer";
+        }
+      });
+    }
+
+    function setMinutes(min) {
+      document.getElementById("minutesInput").value = min;
+      document.getElementById("customMinutesWrap").classList.add("hidden");
+      document.querySelectorAll(".time-btn").forEach((btn) => {
+        if (btn.dataset.min === String(min)) {
+          btn.className = "time-btn py-2.5 rounded-xl animated-orbit-border text-sky-950 text-xs sm:text-sm font-bold transition cursor-pointer";
+        } else {
+          btn.className = "time-btn py-2.5 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-bold transition cursor-pointer";
+        }
+      });
+    }
+
+    function setCustomMinutes() {
+      const wrap = document.getElementById("customMinutesWrap");
+      const input = document.getElementById("minutesInput");
+      wrap.classList.remove("hidden");
+      input.focus();
+      input.select();
+
+      document.querySelectorAll(".time-btn").forEach((btn) => {
+        if (btn.dataset.min === "custom") {
+          btn.className = "time-btn py-2.5 rounded-xl animated-orbit-border text-sky-950 text-xs sm:text-sm font-bold transition cursor-pointer";
+        } else {
+          btn.className = "time-btn py-2.5 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-bold transition cursor-pointer";
+        }
+      });
+    }
+
+    function showAlert(msg) {
+      const box = document.getElementById("alertBox");
+      document.getElementById("alertMessage").textContent = msg;
+      box.classList.remove("hidden");
+    }
+
+    function hideAlert() {
+      document.getElementById("alertBox").classList.add("hidden");
+    }
+
+    function switchScreen(screenId) {
+      ["setupScreen", "loadingScreen", "lessonScreen", "resultScreen"].forEach((id) => {
+        document.getElementById(id).classList.add("hidden");
+      });
+      document.getElementById(screenId).classList.remove("hidden");
+    }
+
+    function renderMath(element) {
+      if (window.renderMathInElement) {
+        renderMathInElement(element, {
+          delimiters: [
+            { left: "$$", right: "$$", display: true },
+            { left: "\\[", right: "\\]", display: true },
+            { left: "$", right: "$", display: false },
+            { left: "\\(", right: "\\)", display: false },
+          ],
+          throwOnError: false,
+        });
+      }
+    }
+
+    async function generateLesson() {
+      hideAlert();
+      const topic = document.getElementById("topicInput").value.trim();
+      const minutes = parseInt(document.getElementById("minutesInput").value, 10) || 10;
+      const questionCount = parseInt(document.getElementById("questionCountInput").value, 10) || 10;
+
+      if (!topic) {
+        showAlert("Физикийн сэдвээ бичнэ үү.");
+        return;
+      }
+
+      switchScreen("loadingScreen");
+
+      try {
+        const res = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            topic,
+            minutes,
+            difficulty: selectedDifficulty,
+            questionCount,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          switchScreen("setupScreen");
+          showAlert(data.error || "Серверийн алдаа гарлаа.");
+          return;
+        }
+
+        if (!data.isPhysics) {
+          switchScreen("setupScreen");
+          showAlert(data.rejectionMessage || "Уучлаарай, энэ систем зөвхөн Физикийн сэдэвт хариулдаг.");
+          return;
+        }
+
+        currentData = data;
+        userAnswers = {};
+        renderQuiz(data);
+        startTimer(minutes * 60);
+        switchScreen("lessonScreen");
+      } catch (err) {
+        switchScreen("setupScreen");
+        showAlert("Сервертэй холбогдож чадсангүй. Дахин оролдоно уу.");
+      }
+    }
+
+    function renderQuiz(data) {
+      document.getElementById("lessonTitle").textContent = data.topicTitle;
+      document.getElementById("lessonLevelBadge").textContent = selectedDifficulty;
+
+      const quizEl = document.getElementById("quizContainer");
+      const letters = ["A", "B", "C", "D"];
+      quizEl.innerHTML = data.questions
+        .map(
+          (q, qIdx) => `
+          <div class="print-break-avoid p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80">
+            <p class="font-bold text-slate-900 text-sm sm:text-base mb-4 leading-relaxed">
+              <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-lg bg-sky-100 text-sky-800 text-xs font-extrabold mr-2">#${qIdx + 1}</span>${q.question}
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              ${q.options
+                .map(
+                  (opt, oIdx) => `
+                  <button
+                    type="button"
+                    id="q-${qIdx}-opt-${oIdx}"
+                    onclick="selectOption(${qIdx}, ${oIdx})"
+                    class="option-card text-left px-4 py-3 rounded-xl bg-white border border-slate-200 hover:border-sky-400 hover:bg-sky-50/40 text-sm text-slate-800 flex items-center gap-3 cursor-pointer"
+                  >
+                    <span class="w-6 h-6 rounded-lg bg-slate-100 text-sky-700 text-xs font-extrabold flex items-center justify-center shrink-0">${letters[oIdx] || oIdx + 1}</span>
+                    <span>${opt}</span>
+                  </button>
+                `
+                )
+                .join("")}
+            </div>
+          </div>
+        `
+        )
+        .join("");
+
+      updateAnsweredCount();
+      renderMath(quizEl);
+    }
+
+    function selectOption(qIdx, oIdx) {
+      userAnswers[qIdx] = oIdx;
+      const totalOpts = currentData.questions[qIdx].options.length;
+      for (let i = 0; i < totalOpts; i++) {
+        const btn = document.getElementById(`q-${qIdx}-opt-${i}`);
+        if (i === oIdx) {
+          btn.className = "option-card text-left px-4 py-3 rounded-xl animated-orbit-border text-sm text-sky-950 font-semibold flex items-center gap-3 cursor-pointer";
+        } else {
+          btn.className = "option-card text-left px-4 py-3 rounded-xl bg-white border border-slate-200 hover:border-sky-400 hover:bg-sky-50/40 text-sm text-slate-800 flex items-center gap-3 cursor-pointer";
+        }
+      }
+      updateAnsweredCount();
+    }
+
+    function updateAnsweredCount() {
+      const answered = Object.keys(userAnswers).length;
+      const total = currentData.questions.length;
+      document.getElementById("answeredCount").textContent = `${answered} / ${total} хариулсан`;
+    }
+
+    function startTimer(seconds) {
+      clearInterval(timerInterval);
+      remainingSeconds = seconds;
+      const timerBox = document.getElementById("timerBox");
+      const timerBadge = document.getElementById("timerBadge");
+      timerBox.classList.remove("hidden");
+      timerBox.classList.add("flex");
+
+      function updateDisplay() {
+        const mins = String(Math.floor(remainingSeconds / 60)).padStart(2, "0");
+        const secs = String(remainingSeconds % 60).padStart(2, "0");
+        document.getElementById("timerDisplay").textContent = `${mins}:${secs}`;
+
+        if (remainingSeconds <= 60) {
+          timerBadge.className = "flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-rose-50 border border-rose-300 font-mono text-sm font-extrabold text-rose-700 animate-pulse";
+        } else {
+          timerBadge.className = "flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 font-mono text-sm font-extrabold text-amber-800";
+        }
+      }
+
+      updateDisplay();
+      timerInterval = setInterval(() => {
+        remainingSeconds--;
+        updateDisplay();
+        if (remainingSeconds <= 0) {
+          clearInterval(timerInterval);
+          submitQuiz(true);
+        }
+      }, 1000);
+    }
+
+    async function submitQuiz(timeUp = false) {
+      clearInterval(timerInterval);
+      document.getElementById("timerBox").classList.add("hidden");
+
+      const questions = currentData.questions;
+      let correctCount = 0;
+      const wrongQuestions = [];
+
+      const reviewHTML = questions
+        .map((q, idx) => {
+          const picked = userAnswers[idx];
+          const isCorrect = picked === q.correctIndex;
+          const userText = picked !== undefined ? q.options[picked] : "Хариулаагүй";
+          const correctText = q.options[q.correctIndex];
+
+          if (isCorrect) {
+            correctCount++;
+          } else {
+            wrongQuestions.push({
+              question: q.question,
+              userAnswer: userText,
+              correctAnswer: correctText,
+            });
+          }
+
+          return `
+            <div class="print-break-avoid p-4 sm:p-5 rounded-2xl border ${isCorrect ? "bg-emerald-50/50 border-emerald-200" : "bg-rose-50/50 border-rose-200"}">
+              <div class="flex items-start justify-between gap-3">
+                <p class="font-bold text-slate-900 text-sm sm:text-base">${idx + 1}. ${q.question}</p>
+                <span class="shrink-0 text-xs font-bold px-2.5 py-1 rounded-full border ${isCorrect ? "bg-emerald-100 text-emerald-800 border-emerald-200" : "bg-rose-100 text-rose-800 border-rose-200"}">
+                  ${isCorrect ? "Зөв ✓" : "Буруу ✕"}
+                </span>
+              </div>
+              <div class="mt-2.5 text-xs sm:text-sm space-y-1">
+                <p class="text-slate-600">Таны хариулт: <span class="${isCorrect ? "text-emerald-700" : "text-rose-700"} font-bold">${userText}</span></p>
+                ${!isCorrect ? `<p class="text-slate-600">Зөв хариулт: <span class="text-emerald-700 font-bold">${correctText}</span></p>` : ""}
+                <p class="text-slate-700 mt-2.5 pt-2.5 border-t border-slate-200/70">
+                  <i class="fa-solid fa-lightbulb text-amber-500 mr-1.5"></i>${q.explanation}
+                </p>
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+
+      const percent = Math.round((correctCount / questions.length) * 100);
+      document.getElementById("scorePercent").textContent = `${percent}%`;
+      document.getElementById("scoreSummary").textContent =
+        `${timeUp ? "Хугацаа дууслаа! " : ""}Түвшин: ${selectedDifficulty} • Нийт ${questions.length} асуултаас ${correctCount} зөв хариуллаа.`;
+
+      const badge = document.getElementById("gradeBadge");
+      if (percent >= 90) {
+        badge.textContent = "Үнэлгээ: A (Онц)";
+        badge.className = "inline-block px-4 py-1.5 rounded-full text-sm font-extrabold border mb-3 bg-emerald-50 text-emerald-700 border-emerald-200";
+      } else if (percent >= 80) {
+        badge.textContent = "Үнэлгээ: B (Сайн)";
+        badge.className = "inline-block px-4 py-1.5 rounded-full text-sm font-extrabold border mb-3 bg-sky-50 text-sky-700 border-sky-200";
+      } else if (percent >= 70) {
+        badge.textContent = "Үнэлгээ: C (Дунд)";
+        badge.className = "inline-block px-4 py-1.5 rounded-full text-sm font-extrabold border mb-3 bg-indigo-50 text-indigo-700 border-indigo-200";
+      } else if (percent >= 60) {
+        badge.textContent = "Үнэлгээ: D (Хангалттай)";
+        badge.className = "inline-block px-4 py-1.5 rounded-full text-sm font-extrabold border mb-3 bg-amber-50 text-amber-700 border-amber-200";
+      } else {
+        badge.textContent = "Үнэлгээ: F (Дахин давтах)";
+        badge.className = "inline-block px-4 py-1.5 rounded-full text-sm font-extrabold border mb-3 bg-rose-50 text-rose-700 border-rose-200";
+      }
+
+      const reviewEl = document.getElementById("reviewContainer");
+      reviewEl.innerHTML = reviewHTML;
+      renderMath(reviewEl);
+
+      switchScreen("resultScreen");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      fetchRemedialTheory(currentData.topicTitle, wrongQuestions);
+    }
+
+    async function fetchRemedialTheory(topicTitle, wrongQuestions) {
+      const loadingEl = document.getElementById("remedialLoading");
+      const contentEl = document.getElementById("remedialContent");
+
+      if (wrongQuestions.length === 0) {
+        loadingEl.classList.add("hidden");
+        contentEl.innerHTML = `
+          <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold flex items-center gap-3">
+            <i class="fa-solid fa-trophy text-xl text-emerald-600"></i>
+            <span>Баяр хүргэе! Та бүх асуултад алдаагүй зөв хариулсан тул нэмэлт давтлага онол шаардлагагүй байна.</span>
+          </div>
+        `;
+        return;
+      }
+
+      contentEl.innerHTML = "";
+      loadingEl.classList.remove("hidden");
+
+      try {
+        const res = await fetch("/api/remedial-theory", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topicTitle, wrongQuestions }),
+        });
+
+        const data = await res.json();
+        loadingEl.classList.add("hidden");
+
+        if (!res.ok) {
+          contentEl.innerHTML = `<p class="text-sm text-rose-600 font-medium">${data.error || "Давтлага онол ачаалж чадсангүй."}</p>`;
+          return;
+        }
+
+        let html = "";
+        if (data.advice) {
+          html += `
+            <div class="print-break-avoid p-4 rounded-2xl bg-sky-50/80 border border-sky-200 text-sky-900 text-sm font-medium">
+              <i class="fa-solid fa-compass text-sky-600 mr-1.5"></i>${data.advice}
+            </div>
+          `;
+        }
+
+        html += data.theory
+          .map(
+            (item) => `
+            <div class="print-break-avoid p-4 sm:p-5 rounded-2xl bg-slate-50/80 border border-slate-200/80">
+              <h4 class="font-extrabold text-indigo-800 mb-1.5">${item.heading}</h4>
+              <p class="text-sm sm:text-base text-slate-700 whitespace-pre-line leading-relaxed">${item.content}</p>
+            </div>
+          `
+          )
+          .join("");
+
+        contentEl.innerHTML = html;
+        renderMath(contentEl);
+      } catch (err) {
+        loadingEl.classList.add("hidden");
+        contentEl.innerHTML = `<p class="text-sm text-rose-600 font-medium">Сервертэй холбогдож давтлага онол авч чадсангүй.</p>`;
+      }
+    }
+
+    function resetApp() {
+      clearInterval(timerInterval);
+      document.getElementById("timerBox").classList.add("hidden");
+      hideAlert();
+      switchScreen("setupScreen");
+    }
+
+    document.getElementById("topicInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") generateLesson();
+    });
+  </script>
+</body>
+</html>
