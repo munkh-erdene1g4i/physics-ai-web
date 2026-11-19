@@ -5,34 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Физик AI — Ухаалаг Шалгалтын Систем</title>
 
- <script>
-    (function () {
-      const h = "https://";
-      const styles = [
-        h + "fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap",
-        h + "cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css",
-        h + "cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
-      ];
-      styles.forEach((href) => {
-        const l = document.createElement("link");
-        l.rel = "stylesheet";
-        l.href = href;
-        document.head.appendChild(l);
-      });
-
-      const scripts = [
-        h + "cdn.tailwindcss.com",
-        h + "cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js",
-        h + "cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
-      ];
-      scripts.forEach((src) => {
-        const s = document.createElement("script");
-        s.src = src;
-        s.async = false;
-        document.head.appendChild(s);
-      });
-    })();
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      },
+    };
   </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+
   <style>
     body {
       font-family: 'Inter', system-ui, sans-serif;
@@ -145,7 +135,6 @@
     .option-card { transition: all 0.18s ease; }
     .option-card:hover { transform: translateY(-1px); }
 
-    /* Хэвлэх горим (Print Stylesheet) */
     @media print {
       @page { margin: 12mm; }
       body {
@@ -185,7 +174,7 @@
     <div class="max-w-4xl mx-auto glass-card rounded-2xl border border-slate-200/80 shadow-sm px-4 sm:px-5 h-16 flex items-center justify-between gap-3">
       <div class="flex items-center gap-3 min-w-0">
         <div class="logo-shiny-wrapper w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sky-600">
-          <svg class="w-6 h-6 relative z-10" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3">
+          <svg width="24" height="24" class="w-6 h-6 relative z-10" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3">
             <circle cx="32" cy="32" r="5" fill="currentColor" />
             <ellipse cx="32" cy="32" rx="26" ry="10" transform="rotate(30 32 32)" />
             <ellipse cx="32" cy="32" rx="26" ry="10" transform="rotate(-30 32 32)" />
