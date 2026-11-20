@@ -58,7 +58,7 @@ async function callOpenRouter(systemPrompt, userPrompt, maxTokens = 4000) {
       "X-Title": "Physics AI Web",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.0-flash-exp:free",
+      model: "openrouter/free",
       response_format: { type: "json_object" },
       temperature: 0.4,
       max_tokens: maxTokens,
