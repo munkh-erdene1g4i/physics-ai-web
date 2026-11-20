@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import { jsonrepair } from "jsonrepair";
 import "dotenv/config";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -10,8 +11,7 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-const VERTEX_GEMINI_URL =
-  "https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent";
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 function safeParseJSON(raw) {
   let text = raw.trim();
@@ -25,18 +25,9 @@ function safeParseJSON(raw) {
 
   try {
     return JSON.parse(text);
-  } catch (e) {}
-
-  let fixed = text
-    .replace(/,\s*([}\]])/g, "$1")
-    .replace(/\\(?!["\\/bfnrtu])/g, "\\\\")
-    .replace(/[\u0000-\u001F]+/g, " ");
-
-  try {
-    return JSON.parse(fixed);
   } catch (e) {
-    const latexFixed = fixed.replace(/\\([a-zA-Z]+)/g, "\\\\$1");
-    return JSON.parse(latexFixed);
+    const repaired = jsonrepair(text);
+    return JSON.parse(repaired);
   }
 }
 
@@ -59,45 +50,62 @@ function shuffleOptions(questions) {
   });
 }
 
-async function callVertexGemini(systemPrompt, userPrompt, maxTokens = 8000) {
-  const apiKey = process.env.GEMINI_API_KEY;
+async function callOpenRouter(systemPrompt, userPrompt, maxTokens = 4000) {
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY олдсонгүй. .env эсвэл Render-ийн Environment хэсгээ шалгана уу.");
+    throw new Error("OPENROUTER_API_KEY олдсонгүй. .env эсвэл Render-ийн Environment хэсгээ шалгана уу.");
   }
 
-  const response = await fetch(`${VERTEX_GEMINI_URL}?key=${encodeURIComponent(apiKey)}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: systemPrompt }],
-      },
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: userPrompt }],
+  const freeModels = [
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "google/gemma-3-27b-it:free",
+    "openrouter/free",
+  ];
+
+  let lastError = "AI загвар хоосон хариулт буцаалаа.";
+
+  for (const model of freeModels) {
+    try {
+      const response = await fetch(OPENROUTER_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "[https://physics-ai-web.onrender.com](https://physics-ai-web.onrender.com)",
+          "X-Title": "Physics AI Web",
         },
-      ],
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.4,
-        maxOutputTokens: maxTokens,
-      },
-    }),
-  });
+        body: JSON.stringify({
+          model,
+          temperature: 0.4,
+          max_tokens: maxTokens,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+        }),
+      });
 
-  const result = await response.json();
-  if (!response.ok) {
-    console.error("Vertex AI Error:", result);
-    throw new Error(result.error?.message || "Vertex AI API дээр алдаа гарлаа.");
+      const result = await response.json();
+      if (!response.ok) {
+        lastError = result.error?.message || `HTTP ${response.status}`;
+        console.warn(`Model ${model} failed:`, lastError);
+        continue;
+      }
+
+      const content = result.choices?.[0]?.message?.content;
+      if (!content || !content.trim()) {
+        console.warn(`Model ${model} returned empty content, trying next...`);
+        continue;
+      }
+
+      return safeParseJSON(content);
+    } catch (err) {
+      lastError = err.message;
+      console.warn(`Model ${model} error:`, err.message);
+    }
   }
 
-  const content = result.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!content) {
-    throw new Error("AI загвар хоосон хариулт буцаалаа. Дахин оролдоно уу.");
-  }
-
-  return safeParseJSON(content);
+  throw new Error(`Үнэгүй AI загварууд одоогоор ачаалалтай байна (${lastError}). Хэдэн секундийн дараа дахин оролдоно уу.`);
 }
 
 // 1. Тест үүсгэх зам (Хугацаа, Түвшин, Даалгаврын тоо)
@@ -111,7 +119,7 @@ app.post("/api/generate", async (req, res) => {
 
     const duration = Math.min(180, Math.max(3, parseInt(minutes, 10) || 10));
     const count = Math.min(30, Math.max(1, parseInt(questionCount, 10) || 10));
-    const maxTokens = Math.min(8192, Math.max(4000, count * 400));
+    const maxTokens = Math.min(6000, Math.max(3000, count * 300));
 
     const levelMap = {
       "Анхан шат": "Анхан шат — үндсэн ойлголт, тодорхойлолт, нэгж шилжүүлэг болон 1 үйлдэлтэй энгийн томьёо ашиглах хөнгөн бодлогууд.",
@@ -151,7 +159,7 @@ app.post("/api/generate", async (req, res) => {
 4. Тайлбар (explanation) хэсгийг маш товч, оновчтой 1-2 өгүүлбэрээр бич.
 5. Бүх бичвэр цэвэрхэн, алдаагүй Монгол хэлээр байна.`;
 
-    const data = await callVertexGemini(systemPrompt, userPrompt, maxTokens);
+    const data = await callOpenRouter(systemPrompt, userPrompt, maxTokens);
     if (data.isPhysics && data.questions) {
       data.questions = shuffleOptions(data.questions);
     }
@@ -198,7 +206,7 @@ ${mistakesText}
 
 Эдгээр алдаан дээр үндэслэн сурагч чухам ямар онол, томьёо, физик утгыг андуурсан байгааг тодорхойлж, 2-4 хэсгээс бүрдсэн цэгцтэй давтлага онол боловсруулж өг. Бүх бичвэр цэвэрхэн Монгол хэлээр байна.`;
 
-    const data = await callVertexGemini(systemPrompt, userPrompt, 4000);
+    const data = await callOpenRouter(systemPrompt, userPrompt, 3000);
     res.json(data);
   } catch (error) {
     console.error("Remedial Theory Error:", error);
