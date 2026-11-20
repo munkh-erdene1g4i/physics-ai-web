@@ -10,8 +10,7 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-const OPENROUTER_URL = "https://" + "openrouter.ai/api/v1/chat/completions";
-const APP_REFERER = "http://" + "localhost:3000";
+const GITHUB_MODELS_URL = "https://" + "models.github.ai/inference/chat/completions";
 
 function safeParseJSON(raw) {
   let text = raw.trim();
@@ -43,22 +42,20 @@ function shuffleOptions(questions) {
   });
 }
 
-async function callOpenRouter(systemPrompt, userPrompt, maxTokens = 4000) {
-  const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error(".env файл дотор API түлхүүр олдсонгүй.");
+async function callGitHubAI(systemPrompt, userPrompt, maxTokens = 4000) {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) {
+    throw new Error("GITHUB_TOKEN олдсонгүй. .env эсвэл Render-ийн Environment хэсгээ шалгана уу.");
   }
 
-  const response = await fetch(OPENROUTER_URL, {
+  const response = await fetch(GITHUB_MODELS_URL, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": APP_REFERER,
-      "X-Title": "Physics AI Web",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: "openai/gpt-4o-mini",
       response_format: { type: "json_object" },
       temperature: 0.4,
       max_tokens: maxTokens,
@@ -71,8 +68,8 @@ async function callOpenRouter(systemPrompt, userPrompt, maxTokens = 4000) {
 
   const result = await response.json();
   if (!response.ok) {
-    console.error("OpenRouter Error:", result);
-    throw new Error(result.error?.message || "OpenRouter API дээр алдаа гарлаа.");
+    console.error("GitHub Models Error:", result);
+    throw new Error(result.error?.message || "GitHub Models API дээр алдаа гарлаа.");
   }
 
   const content = result.choices?.[0]?.message?.content;
@@ -133,7 +130,7 @@ app.post("/api/generate", async (req, res) => {
 4. Тайлбар (explanation) хэсгийг маш товч, оновчтой 1-2 өгүүлбэрээр бич.
 5. Бүх бичвэр цэвэрхэн, алдаагүй Монгол хэлээр байна.`;
 
-    const data = await callOpenRouter(systemPrompt, userPrompt, maxTokens);
+    const data = await callGitHubAI(systemPrompt, userPrompt, maxTokens);
     if (data.isPhysics && data.questions) {
       data.questions = shuffleOptions(data.questions);
     }
@@ -179,7 +176,7 @@ ${mistakesText}
 
 Эдгээр алдаан дээр үндэслэн сурагч чухам ямар онол, томьёо, физик утгыг андуурсан байгааг тодорхойлж, 2-4 хэсгээс бүрдсэн цэгцтэй давтлага онол боловсруулж өг. Бүх бичвэр цэвэрхэн Монгол хэлээр байна.`;
 
-    const data = await callOpenRouter(systemPrompt, userPrompt, 3000);
+    const data = await callGitHubAI(systemPrompt, userPrompt, 3000);
     res.json(data);
   } catch (error) {
     console.error("Remedial Theory Error:", error);
