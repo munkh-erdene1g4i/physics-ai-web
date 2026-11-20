@@ -24,6 +24,25 @@ function safeParseJSON(raw) {
   }
 }
 
+// A, B, C, D хувилбаруудыг санамсаргүй байдлаар хольж, зөв хариултын индексийг шинэчлэх
+function shuffleOptions(questions) {
+  if (!Array.isArray(questions)) return questions;
+  return questions.map((q) => {
+    if (!Array.isArray(q.options) || q.options.length < 2) return q;
+    const correctText = q.options[q.correctIndex];
+    const shuffled = [...q.options];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return {
+      ...q,
+      options: shuffled,
+      correctIndex: shuffled.indexOf(correctText),
+    };
+  });
+}
+
 async function callOpenRouter(systemPrompt, userPrompt, maxTokens = 4000) {
   const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -39,7 +58,7 @@ async function callOpenRouter(systemPrompt, userPrompt, maxTokens = 4000) {
       "X-Title": "Physics AI Web",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: "google/gemini-2.0-flash-exp:free",
       response_format: { type: "json_object" },
       temperature: 0.4,
       max_tokens: maxTokens,
@@ -70,8 +89,7 @@ app.post("/api/generate", async (req, res) => {
 
     const duration = Math.min(180, Math.max(3, parseInt(minutes, 10) || 10));
     const count = Math.min(30, Math.max(1, parseInt(questionCount, 10) || 10));
-    // Асуултын тооноос хамааран токены хязгаарыг автоматаар тохируулах (дээд тал нь 14000)
-   const maxTokens = Math.min(6000, Math.max(3000, count * 300));
+    const maxTokens = Math.min(6000, Math.max(3000, count * 300));
 
     const levelMap = {
       "Анхан шат": "Анхан шат — үндсэн ойлголт, тодорхойлолт, нэгж шилжүүлэг болон 1 үйлдэлтэй энгийн томьёо ашиглах хөнгөн бодлогууд.",
@@ -111,6 +129,9 @@ app.post("/api/generate", async (req, res) => {
 5. Бүх бичвэр цэвэрхэн, алдаагүй Монгол хэлээр байна.`;
 
     const data = await callOpenRouter(systemPrompt, userPrompt, maxTokens);
+    if (data.isPhysics && data.questions) {
+      data.questions = shuffleOptions(data.questions);
+    }
     res.json(data);
   } catch (error) {
     console.error("Generate Error:", error);
@@ -153,7 +174,7 @@ ${mistakesText}
 
 Эдгээр алдаан дээр үндэслэн сурагч чухам ямар онол, томьёо, физик утгыг андуурсан байгааг тодорхойлж, 2-4 хэсгээс бүрдсэн цэгцтэй давтлага онол боловсруулж өг. Бүх бичвэр цэвэрхэн Монгол хэлээр байна.`;
 
-    const data = await callOpenRouter(systemPrompt, userPrompt, 4000);
+    const data = await callOpenRouter(systemPrompt, userPrompt, 3000);
     res.json(data);
   } catch (error) {
     console.error("Remedial Theory Error:", error);
