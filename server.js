@@ -53,6 +53,8 @@ async function callGitHubAI(systemPrompt, userPrompt, maxTokens = 4000) {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
     },
     body: JSON.stringify({
       model: "openai/gpt-4o-mini",
@@ -66,10 +68,18 @@ async function callGitHubAI(systemPrompt, userPrompt, maxTokens = 4000) {
     }),
   });
 
-  const result = await response.json();
+  const rawText = await response.text();
+  let result;
+  try {
+    result = JSON.parse(rawText);
+  } catch (e) {
+    console.error("GitHub Models Non-JSON Response:", response.status, rawText);
+    throw new Error(`API буруу хариулт өглөө (HTTP ${response.status}): ${rawText.slice(0, 120)}`);
+  }
+
   if (!response.ok) {
     console.error("GitHub Models Error:", result);
-    throw new Error(result.error?.message || "GitHub Models API дээр алдаа гарлаа.");
+    throw new Error(result.error?.message || result.message || "GitHub Models API дээр алдаа гарлаа.");
   }
 
   const content = result.choices?.[0]?.message?.content;
