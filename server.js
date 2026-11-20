@@ -55,37 +55,56 @@ async function callOpenRouter(systemPrompt, userPrompt, maxTokens = 4000) {
     throw new Error("OPENROUTER_API_KEY олдсонгүй. .env эсвэл Render-ийн Environment хэсгээ шалгана уу.");
   }
 
-  const response = await fetch(OPENROUTER_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "[https://physics-ai-web.onrender.com](https://physics-ai-web.onrender.com)",
-      "X-Title": "Physics AI Web",
-    },
-    body: JSON.stringify({
-      model: "openrouter/free",
-      temperature: 0.4,
-      max_tokens: maxTokens,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-    }),
-  });
+  const freeModels = [
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "google/gemma-3-27b-it:free",
+    "openrouter/free",
+  ];
 
-  const result = await response.json();
-  if (!response.ok) {
-    console.error("OpenRouter Error:", result);
-    throw new Error(result.error?.message || "OpenRouter API дээр алдаа гарлаа.");
+  let lastError = "AI загвар хоосон хариулт буцаалаа.";
+
+  for (const model of freeModels) {
+    try {
+      const response = await fetch(OPENROUTER_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "[https://physics-ai-web.onrender.com](https://physics-ai-web.onrender.com)",
+          "X-Title": "Physics AI Web",
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.4,
+          max_tokens: maxTokens,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        lastError = result.error?.message || `HTTP ${response.status}`;
+        console.warn(`Model ${model} failed:`, lastError);
+        continue;
+      }
+
+      const content = result.choices?.[0]?.message?.content;
+      if (!content || !content.trim()) {
+        console.warn(`Model ${model} returned empty content, trying next...`);
+        continue;
+      }
+
+      return safeParseJSON(content);
+    } catch (err) {
+      lastError = err.message;
+      console.warn(`Model ${model} error:`, err.message);
+    }
   }
 
-  const content = result.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new Error("AI загвар хоосон хариулт буцаалаа. Дахин оролдоно уу.");
-  }
-
-  return safeParseJSON(content);
+  throw new Error(`Үнэгүй AI загварууд одоогоор ачаалалтай байна (${lastError}). Хэдэн секундийн дараа дахин оролдоно уу.`);
 }
 
 // 1. Тест үүсгэх зам (Хугацаа, Түвшин, Даалгаврын тоо)
