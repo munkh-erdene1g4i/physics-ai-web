@@ -57,8 +57,8 @@ async function callOpenRouter(systemPrompt, userPrompt, maxTokens = 4000) {
   }
 
   const freeModels = [
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "google/gemma-3-27b-it:free",
+    "openrouter/free",
+    "openrouter/free",
     "openrouter/free",
   ];
 
