@@ -10,7 +10,7 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-const GITHUB_MODELS_URL = "https://" + "models.github.ai/inference/chat/completions";
+const GITHUB_MODELS_URL = "https://models.inference.ai.azure.com/chat/completions";
 
 function safeParseJSON(raw) {
   let text = raw.trim();
@@ -53,11 +53,9 @@ async function callGitHubAI(systemPrompt, userPrompt, maxTokens = 4000) {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
     },
     body: JSON.stringify({
-      model: "openai/gpt-4o-mini",
+      model: "gpt-4o-mini",
       response_format: { type: "json_object" },
       temperature: 0.4,
       max_tokens: maxTokens,
