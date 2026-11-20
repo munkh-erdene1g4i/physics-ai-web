@@ -58,7 +58,7 @@ async function callOpenRouter(systemPrompt, userPrompt, maxTokens = 4000) {
       "X-Title": "Physics AI Web",
     },
     body: JSON.stringify({
-      model: "openrouter/free",
+      model: "google/gemini-2.5-flash",
       response_format: { type: "json_object" },
       temperature: 0.4,
       max_tokens: maxTokens,
@@ -75,7 +75,12 @@ async function callOpenRouter(systemPrompt, userPrompt, maxTokens = 4000) {
     throw new Error(result.error?.message || "OpenRouter API дээр алдаа гарлаа.");
   }
 
-  return safeParseJSON(result.choices[0].message.content);
+  const content = result.choices?.[0]?.message?.content;
+  if (!content) {
+    throw new Error("AI загвар хоосон хариулт буцаалаа. Дахин оролдоно уу.");
+  }
+
+  return safeParseJSON(content);
 }
 
 // 1. Тест үүсгэх зам (Хугацаа, Түвшин, Даалгаврын тоо)
