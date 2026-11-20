@@ -10,11 +10,18 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-const GITHUB_MODELS_URL = "https://models.inference.ai.azure.com/chat/completions";
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 function safeParseJSON(raw) {
   let text = raw.trim();
   text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/, "");
+
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    text = text.slice(firstBrace, lastBrace + 1);
+  }
+
   try {
     return JSON.parse(text);
   } catch (e) {
@@ -42,21 +49,22 @@ function shuffleOptions(questions) {
   });
 }
 
-async function callGitHubAI(systemPrompt, userPrompt, maxTokens = 4000) {
-  const token = process.env.GITHUB_TOKEN;
-  if (!token) {
-    throw new Error("GITHUB_TOKEN олдсонгүй. .env эсвэл Render-ийн Environment хэсгээ шалгана уу.");
+async function callOpenRouter(systemPrompt, userPrompt, maxTokens = 4000) {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENROUTER_API_KEY олдсонгүй. .env эсвэл Render-ийн Environment хэсгээ шалгана уу.");
   }
 
-  const response = await fetch(GITHUB_MODELS_URL, {
+  const response = await fetch(OPENROUTER_URL, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      "HTTP-Referer": "[https://physics-ai-web.onrender.com](https://physics-ai-web.onrender.com)",
+      "X-Title": "Physics AI Web",
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
-      response_format: { type: "json_object" },
+      model: "openrouter/free",
       temperature: 0.4,
       max_tokens: maxTokens,
       messages: [
@@ -66,18 +74,10 @@ async function callGitHubAI(systemPrompt, userPrompt, maxTokens = 4000) {
     }),
   });
 
-  const rawText = await response.text();
-  let result;
-  try {
-    result = JSON.parse(rawText);
-  } catch (e) {
-    console.error("GitHub Models Non-JSON Response:", response.status, rawText);
-    throw new Error(`API буруу хариулт өглөө (HTTP ${response.status}): ${rawText.slice(0, 120)}`);
-  }
-
+  const result = await response.json();
   if (!response.ok) {
-    console.error("GitHub Models Error:", result);
-    throw new Error(result.error?.message || result.message || "GitHub Models API дээр алдаа гарлаа.");
+    console.error("OpenRouter Error:", result);
+    throw new Error(result.error?.message || "OpenRouter API дээр алдаа гарлаа.");
   }
 
   const content = result.choices?.[0]?.message?.content;
@@ -111,7 +111,7 @@ app.post("/api/generate", async (req, res) => {
 
     const systemPrompt = `Чи бол ЕБС-ийн ахлах ангийн Физикийн мэргэжлийн багш. Физикээс өөр ямар ч сэдэвт хариулахгүй.
 ЧУХАЛ: JSON дотор LaTeX томьёо бичихдээ $...$ хаалт ашиглаж, бүх \\ тэмдэгтийг ЗААВАЛ давхар \\\\ гэж бич (жишээ нь: $\\\\frac{a}{b}$, $F = m \\\\cdot a$, $\\\\Delta t$).
-Хариултыг ЗӨВХӨН дараах бүтэцтэй цэвэр JSON форматаар буцаа:
+Ямар ч нэмэлт тайлбар бичилгүйгээр ЗӨВХӨН дараах бүтэцтэй цэвэр JSON буцаа:
 {
   "isPhysics": true эсвэл false,
   "rejectionMessage": "Физикийн сэдэв биш бол татгалзсан тайлбар, мөн бол хоосон текст",
@@ -138,7 +138,7 @@ app.post("/api/generate", async (req, res) => {
 4. Тайлбар (explanation) хэсгийг маш товч, оновчтой 1-2 өгүүлбэрээр бич.
 5. Бүх бичвэр цэвэрхэн, алдаагүй Монгол хэлээр байна.`;
 
-    const data = await callGitHubAI(systemPrompt, userPrompt, maxTokens);
+    const data = await callOpenRouter(systemPrompt, userPrompt, maxTokens);
     if (data.isPhysics && data.questions) {
       data.questions = shuffleOptions(data.questions);
     }
@@ -160,7 +160,7 @@ app.post("/api/remedial-theory", async (req, res) => {
 
     const systemPrompt = `Чи бол ЕБС-ийн ахлах ангийн Физикийн багш. Сурагчийн шалгалт дээр алдсан асуултуудыг шинжилж, яг дутуу ойлгосон онол, томьёо, хуулийг нь маш ойлгомжтой тайлбарлаж өгнө.
 ЧУХАЛ: JSON дотор LaTeX томьёо бичихдээ $...$ хаалт ашиглаж, бүх \\ тэмдэгтийг ЗААВАЛ давхар \\\\ гэж бич (жишээ нь: $\\\\frac{a}{b}$, $F = m \\\\cdot a$).
-Хариултыг ЗӨВХӨН дараах JSON форматаар буцаа:
+Ямар ч нэмэлт тайлбар бичилгүйгээр ЗӨВХӨН дараах JSON форматаар буцаа:
 {
   "advice": "Сурагчид өгөх 1-2 өгүүлбэр ерөнхий зөвлөгөө",
   "theory": [
@@ -184,7 +184,7 @@ ${mistakesText}
 
 Эдгээр алдаан дээр үндэслэн сурагч чухам ямар онол, томьёо, физик утгыг андуурсан байгааг тодорхойлж, 2-4 хэсгээс бүрдсэн цэгцтэй давтлага онол боловсруулж өг. Бүх бичвэр цэвэрхэн Монгол хэлээр байна.`;
 
-    const data = await callGitHubAI(systemPrompt, userPrompt, 3000);
+    const data = await callOpenRouter(systemPrompt, userPrompt, 3000);
     res.json(data);
   } catch (error) {
     console.error("Remedial Theory Error:", error);
